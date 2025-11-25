@@ -1,4 +1,4 @@
-// src/components/DeckSelection.js (Updated with Theming)
+// src/components/DeckSelection.js (CORRECTED)
 
 import React, { useState, useEffect } from 'react';
 
@@ -10,11 +10,60 @@ const DECK_DATA = [
 ];
 
 const DeckSelection = ({ navigate }) => {
-    // ... [State and Logic functions remain the same as previous step] ...
+    const [selectedDeckId, setSelectedDeckId] = useState(null);
+    const [selectedAdvantage, setSelectedAdvantage] = useState(null);
+    const [currentDeck, setCurrentDeck] = useState(null);
 
-    // --- RENDER LOGIC ---
-    return (
-        // Outer shop counter area
+    // Update currentDeck whenever selectedDeckId changes
+    useEffect(() => {
+        const deck = DECK_DATA.find(d => d.id === selectedDeckId);
+        setCurrentDeck(deck || null); // Ensure it defaults to null if no match found
+        setSelectedAdvantage(null); // Reset advantage on deck change
+    }, [selectedDeckId]);
+
+
+    // --- LOGIC: Get Available Bottled Rift Options ---
+    const getBottledRiftOptions = () => {
+        if (!currentDeck) return [];
+
+        const options = [
+            { id: 'TEMP_MANA', name: 'Tempo Choice', effect: 'Grants 1 Temporary Mana Crystal' },
+            { id: 'EXTRA_CARD', name: 'Draw Choice', effect: 'Draws 1 additional card (Total 6)' }
+        ];
+        
+        // Conditional Rule: Resource Choice is only available if VS Goal >= 10
+        if (currentDeck.vs_goal >= 10) {
+            const vsGain = Math.floor(currentDeck.vs_goal * 0.1);
+            
+            options.push({ 
+                id: 'VS_RESOURCE', 
+                name: 'Resource Choice', 
+                effect: `Starts with ${vsGain} VS (10% of Goal)`,
+                value: vsGain 
+            });
+        }
+
+        return options;
+    };
+
+    // --- Handle Match Start ---
+    const handleStartMatch = () => {
+        if (!selectedDeckId || !selectedAdvantage || !currentDeck) {
+            alert("Please select both a Deck and a Second Player Advantage.");
+            return;
+        }
+
+        const finalLoadout = {
+            deckId: selectedDeckId,
+            advantage: selectedAdvantage,
+            vsGain: selectedAdvantage === 'VS_RESOURCE' ? Math.floor(currentDeck.vs_goal * 0.1) : 0 
+        };
+        
+        navigate('matchQueue', finalLoadout);
+    };
+
+    // --- RENDER LOGIC (The Return Part) ---
+    return ( // <--- Ensure this return is present and wraps the JSX
         <div className="deck-selection shop-counter-area"> 
             
             <h2 className="selection-header">1. Select Your Deck Box</h2>
@@ -24,7 +73,6 @@ const DeckSelection = ({ navigate }) => {
                 {DECK_DATA.map(deck => (
                     <div 
                         key={deck.id}
-                        // Use both base class and theme class for styling
                         className={`deck-box ${deck.theme} ${selectedDeckId === deck.id ? 'selected-box' : ''}`}
                         onClick={() => setSelectedDeckId(deck.id)}
                     >
